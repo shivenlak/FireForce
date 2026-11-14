@@ -27,7 +27,7 @@ We tested 0.01°, 0.025° and 0.05° grids (see §5).
   - Summing `harmonized_weight` over an AOI gives its harmonized cell-days. At country level this reproduces the series exactly (max relative error 5×10⁻¹³).
 
 ## 4. Consistency traps
-- **Terra-only era (Nov 2000 – Jun 2002).** Aqua MODIS starts 4 Jul 2002, so early counts are biased low. We estimate `f_m = median(all-MODIS / Terra-only cell-days)` per month-of-year over 2003–2011, apply it to the Terra-only months, and flag them in the calendar. For Canada, f ranges from 1.35 in July to about 2 in winter.
+- **Terra-only era (Nov 2000 – Jun 2002).** Aqua MODIS starts 4 Jul 2002, so early counts are biased low. We estimate `f_m = median(all-MODIS / Terra-only cell-days)` per month-of-year over 2003–2011, apply it to the Terra-only months, and flag them in the calendar. For Canada (0.01° grid), f is about 2.0 pooled, ranging from 1.67 to 2.32 by month: Aqua adds many afternoon fires that Terra misses.
 - **Overpass time.** S-NPP crosses at ~13:30 local, like Aqua. Monthly S-NPP cell-days correlate with Aqua-only cell-days at r = 0.979 (Canada).
 - **Sensor outages.** An outage day is one with zero S-NPP detections of any type while MODIS has ≥5. Months with ≥2 outage days use MODIS (flagged "gap-filled"). This catches the S-NPP safe-mode event of 27 Jul – 10 Aug 2022, the 2024 gaps, and the end of the S-NPP NRT feed on 2 Nov 2026.
 - **Partial current month.** Flagged in the calendar. The "this month vs history" card compares month-to-date against the same day range in every past year.

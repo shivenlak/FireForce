@@ -94,3 +94,10 @@ def recent(bbox: str = Query(..., description="west,south,east,north"), days: in
     except (ValueError, AssertionError) as e:
         raise HTTPException(400, "bbox must be 'west,south,east,north'") from e
     return firms_client.recent(b, days)
+
+
+@app.get("/api/methods", response_class=PlainTextResponse)
+def methods():
+    """METHODS.md as markdown, rendered on the Methods page."""
+    path = queries.ROOT / "METHODS.md"
+    return PlainTextResponse(path.read_text() if path.exists() else "", media_type="text/markdown")
