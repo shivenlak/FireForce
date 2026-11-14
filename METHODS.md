@@ -12,12 +12,12 @@ Units are **MODIS-equivalent fire cell-days**.
 ## 2. Common unit: fire cell-days
 A VIIRS 375 m pixel covers about 1/7 the area of a MODIS 1 km pixel, so one fire produces many more VIIRS detections, and each satellite overpasses a different number of times per day. Raw counts are therefore not comparable.
 We snap every detection to a regular lat/lon grid and count **distinct (grid cell, UTC date) pairs per sensor**. This removes both the resolution inflation and the multiple-overpass double counting.
-0.01°, 0.025° and 0.05° grids were tested (§5). **0.01° was chosen for every country.**
+0.01°, 0.025° and 0.05° grids were tested (§5). The grid is chosen per country: **0.01° for Canada, Brazil and the USA; 0.025° for Australia.**
 
 ## 3. Calibrate VIIRS to MODIS
 - **Overlap:** Feb 2012 – Dec 2025. S-NPP starts 20 Jan 2012; 2025 is the last complete standard-processing year. **Months with any sensor-outage day are excluded** from fitting and validation (9–11 months per country), because a partial VIIRS month biases the ratio.
 - **Model (per country × month-of-year m):** `k_m = median over overlap years of V/M`, using months with ≥20 MODIS cell-days; a month with fewer than 3 usable years falls back to the pooled ratio. Harmonized VIIRS: `M̂ = V / k_m`.
-  A robust log-linear alternative, `log1p(V) = a_m + b_m·log1p(M)` (Theil–Sen), validated worse at every grid in every country (bias +6–8%), so the ratio model is used.
+  A robust log-linear alternative, `log1p(V) = a_m + b_m·log1p(M)` (Theil–Sen), is also fitted. The model with the lower LOYO score (MAPE + |bias|) is used: **ratio for Canada, Brazil and the USA; log-linear for Australia**, where it captures the slight saturation in big fire years (score 7.7 vs 9.6). With the log-linear model, a detection's VIIRS weight uses the country-month scale `M̂/V`.
 - **Seasonality matters:** in Canada k ranges from 2.0 (May/Oct) to 5.6 (Mar). VIIRS's advantage is largest when fires are small.
 - **NOAA-20 (VIIRS on JPSS-1):** calibrated to MODIS the same way over Apr 2018 – Dec 2025 (Canada: LOYO R² 0.987, MAPE 17.5%).
 - **Harmonized series:** MODIS for Nov 2000 – Jan 2012. From Feb 2012 the source is a monthly cascade: **calibrated S-NPP → calibrated NOAA-20 (if S-NPP has an outage) → MODIS (if NOAA-20 is unavailable too).** Every source is in MODIS-equivalent units, so the series keeps running after MODIS ends.
@@ -29,8 +29,8 @@ We snap every detection to a regular lat/lon grid and count **distinct (grid cel
   - Summing `harmonized_weight` over any AOI gives its harmonized cell-days. At country level this reproduces the series to within 10⁻¹² (checked on every build).
 
 ## 4. Consistency traps
-- **Terra-only era (Nov 2000 – Jun 2002).** Aqua MODIS starts 4 Jul 2002, so early counts are biased low. We estimate `f_m = median(all-MODIS / Terra-only cell-days)` per month-of-year over 2003–2011, apply it to the Terra-only months, and hatch them in the calendar. Pooled f: Canada 2.03, USA 2.17, Brazil 2.62. Aqua's afternoon overpass sees many fires Terra's morning pass misses; in Brazil this is the strongest.
-- **Overpass time.** S-NPP crosses at ~13:30 local, like Aqua. Monthly S-NPP cell-days correlate with Aqua-only cell-days at r = 0.981 (Canada), 0.990 (Brazil), 0.953 (USA).
+- **Terra-only era (Nov 2000 – Jun 2002).** Aqua MODIS starts 4 Jul 2002, so early counts are biased low. We estimate `f_m = median(all-MODIS / Terra-only cell-days)` per month-of-year over 2003–2011, apply it to the Terra-only months, and hatch them in the calendar. Pooled f: Canada 2.03, USA 2.17, Australia 2.21, Brazil 2.62. Aqua's afternoon overpass sees many fires Terra's morning pass misses; in Brazil this is the strongest.
+- **Overpass time.** S-NPP crosses at ~13:30 local, like Aqua. Monthly S-NPP cell-days correlate with Aqua-only cell-days at r = 0.981 (Canada), 0.990 (Brazil), 0.953 (USA), 0.985 (Australia).
 - **Sensor outages.** An outage day is one with zero S-NPP (or NOAA-20) detections of any type while MODIS has ≥5. Gas flares make every normal day non-zero. Days after a feed's last date also count. A month with ≥2 outage days uses the next source in the cascade and is hatched "gap-filled". This catches the S-NPP safe-mode event of 27 Jul – 10 Aug 2022, gaps in 2024, and the end of the S-NPP NRT feed on 2 Nov 2026.
 - **Partial current month.** Flagged in the calendar. The "this month vs history" card compares month-to-date against the same day range in every past year.
 
@@ -42,12 +42,13 @@ Leave-one-year-out (LOYO): for each overlap year, fit on all other years, predic
 | Canada | **0.972** | **18.4%** | −1.7% | 0.972 | 21.8% / +10.8% | 21.1% | 20.3% |
 | Brazil | **0.991** | **8.3%** | −1.2% | 0.953 | 6.9% / +0.3% | 11.1% | 7.2% |
 | United States | **0.954** | **9.9%** | −0.4% | 0.874 | 10.7% / +2.4% | 12.8% | 9.7% |
+| Australia (0.025°, log-linear) | **0.985** | **7.5%** | +0.1% | 0.990 | 7.5% / +0.9% | 9.6% | 8.4% |
 
-(Australia is added when processed; run `python -m pipeline.report` for the current table.)
+(`python -m pipeline.report` prints the current table.)
 
 What this shows:
-- Calibrated VIIRS reproduces MODIS month by month with R² ≥ 0.95 and bias within ±2% in all three countries. "Raw lines disagree, harmonized lines overlap": see the Methods page chart.
-- **Cell-days vs raw detections.** In Canada (many small fires) cell-days are clearly better: the year-to-year CV of the ratio is 0.13 vs 0.18, and bias is −1.7% vs +10.8%. In the USA they are slightly better. **In Brazil raw detections do slightly better** (CV 0.04 vs 0.06). There, very large, dense fire fronts saturate 0.01° cells in extreme years (the ratio drops to 2.0 in the record 2024 season). We keep one unit everywhere so AOIs spanning countries stay consistent; a per-region unit choice is listed in QUESTIONS.md.
+- Calibrated VIIRS reproduces MODIS month by month with R² ≥ 0.95 and bias within ±2% in all four countries. "Raw lines disagree, harmonized lines overlap": see the Methods page chart.
+- **Cell-days vs raw detections.** In Canada (many small fires) cell-days are clearly better: the year-to-year CV of the ratio is 0.13 vs 0.18, and bias is −1.7% vs +10.8%. In the USA they are slightly better; in Australia they tie. **In Brazil raw detections do slightly better** (CV 0.04 vs 0.06). There, very large, dense fire fronts saturate 0.01° cells in extreme years (the ratio drops to 2.0 in the record 2024 season). We keep one unit everywhere so AOIs spanning countries stay consistent; a per-region unit choice is listed in QUESTIONS.md.
 - The forward test (training only on pre-2020 years) shows the calibration transfers to unseen years, including Canada's record 2023 season.
 - Grid/model candidates, per-year errors, k by month and the full monthly series are in `data/processed/validation.json` and on the Methods page.
 

@@ -9,7 +9,7 @@
 | M3 backend | ✅ | All endpoints + `/api/points`, `/api/methods`, `/api/health`. 17 pytest tests. |
 | M4 frontend MVP | ✅ | Map, AOI draw/point/country, calendar, CSV downloads; Playwright smoke test + screenshots. |
 | M5 analytics | ✅ | Anomaly %, robust z, month-to-date rank/percentile, climatology, annual totals, peaks, sensor share, mode toggle, flags. |
-| M6 more countries | ✅ Brazil, USA · ⏳ Australia | Australia's S-NPP download was still running at the time of writing; the orchestrator builds it automatically. |
+| M6 more countries | ✅ | Brazil, USA, Australia processed and validated. |
 | M7 live data | ✅ | `/api/recent` (NOAA-20/21 + MODIS NRT, 1 h cache) + map layer. |
 | M8 polish | ✅ | README, HANDOFF, METHODS with real numbers, aria labels, keyboard focus, table view, PNG export. |
 | Stretch: NOAA-20 gap filling | ✅ Canada · ⏳ others | Calibrated NOAA-20 replaces S-NPP in outage months (Canada LOYO R² 0.987). |
@@ -22,6 +22,7 @@
 | Canada | 0.972 | 18.4% | −1.7% | 0.972 |
 | Brazil | 0.991 | 8.3% | −1.2% | 0.953 |
 | USA | 0.954 | 9.9% | −0.4% | 0.874 |
+| Australia | 0.985 | 7.5% | +0.1% | 0.990 |
 
 ## Things that went wrong, and what I did
 - **FIRMS country API returned "Invalid API call"** → switched to the area endpoint (max 5 days per call) + polygon clip.
