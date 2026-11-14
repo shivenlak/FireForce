@@ -17,3 +17,9 @@ Decisions made unattended; each is easy to revisit (most are one line in `pipeli
 13. **Per-detection weights**: `cellday_weight = 1/n_det(cell-day)`, `calibrated_weight` = MODIS-equivalent weight (MODIS: terra_factor/n; VIIRS: (V_cal/V)/n = (1/k_m)/n), `harmonized_weight` = calibrated weight if the detection's sensor is that month's harmonized source, else 0. Summing `harmonized_weight` over any AOI gives the harmonized count; verified exactly at country level (max rel. error 5e-13).
 14. **Calibration is country-level** and applied to any AOI inside that country. An AOI-specific fit is a stretch goal.
 15. **Backend reads `data/processed/` if it has detections, else `data/sample/`** (env `DATA_DIR` overrides).
+16. **Outage months excluded from calibration and validation.** Any month with ≥1 outage day for S-NPP or MODIS (NOAA-20 or MODIS for the N20 fit) is left out of the fit. This improved Brazil's annual R² from 0.89 to 0.95.
+17. **NOAA-20 cascade.** In the VIIRS era the harmonized source is S-NPP; if S-NPP has ≥2 outage days, calibrated NOAA-20; if NOAA-20 is unavailable too, MODIS. NOAA-20 is calibrated to MODIS with the same ratio model over 2018-04 → 2025-12.
+18. **One unit (cell-days) for every country**, even though raw detections validate slightly better in Brazil. Mixing units would break AOIs that span countries and make the UI confusing. Revisit with a saturation-aware model (QUESTIONS.md).
+19. **One global overlap window (2012-02 → 2025-12).** Brazil validates slightly better ending in 2022. Comparing LOYO scores across different windows isn't apples to apples, so we report the sensitivity instead of tuning per country.
+20. **API port 8010** (8000 was in use by another process on this machine).
+21. **Backend store reloads automatically** when `calibration.json` changes, so a running dev server picks up new pipeline output.

@@ -5,3 +5,5 @@
 3. Should the harmonized series switch to NOAA-20 for months where S-NPP is down instead of MODIS? MODIS is nearing end of life, so this matters for the future.
 4. The FIRMS **country API endpoint returns "Invalid API call"** with this key. Maybe it needs a different key tier, or it was retired. The area endpoint works fine.
 5. Calibration is per country. Do judges care about sub-national calibration (e.g. 5° tiles)? The weights design supports it.
+6. **Brazil: raw detections calibrate slightly better than cell-days** (MAPE 6.9% vs 8.3%), probably because 0.01° cells saturate under big fire fronts (k drops to 2.0 in 2024). Options: a coarser-than-0.01° unit only in Brazil, a saturation-aware model (e.g. log-linear fit per fire-intensity tercile), or accept it. Currently we accept it and say so on the Methods page.
+7. Should the overlap window end at 2022 to avoid Terra/Aqua orbit drift? Canada and the USA are insensitive; Brazil improves slightly (MAPE 8.3% → 7.2%).
