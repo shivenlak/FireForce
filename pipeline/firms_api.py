@@ -32,7 +32,7 @@ COUNTRY_BBOXES = {
 }
 
 
-def _get(url: str, retries: int = 3) -> str:
+def _get(url: str, retries: int = 5) -> str:
     global _last_call
     for attempt in range(retries):
         wait = 1.0 - (time.time() - _last_call)
@@ -44,8 +44,10 @@ def _get(url: str, retries: int = 3) -> str:
             text = r.text
             if r.status_code == 200 and text.startswith("latitude"):
                 return text
-            if "exceeded" in text.lower():
-                time.sleep(120)
+            if "exceed" in text.lower():  # "Exceeding allowed transaction limit" (5000 / 10 min window)
+                print("  transaction limit hit; waiting 5 min", flush=True)
+                time.sleep(300)
+                continue
             elif text.strip() == "" and r.status_code == 200:
                 return ""
             print(f"  API error ({r.status_code}): {text[:120]}", flush=True)

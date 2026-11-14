@@ -34,7 +34,8 @@ def validate_country(country: str, calib: dict) -> dict:
     months = pd.read_parquet(config.PROCESSED / "months" / f"{country}.parquet")
     start, end = calib["overlap"]
     method = calib["method"]
-    ov = cal.in_window(months, start, end)
+    clean_month = (months["viirs_outage_days"] == 0) & (months["modis_outage_days"] == 0)
+    ov = cal.in_window(months[clean_month], start, end)
 
     chosen, res = cal.loyo(ov, method)
     raw = ov.assign(M=ov["det_M"], V=ov["det_V"])
@@ -42,12 +43,12 @@ def validate_country(country: str, calib: dict) -> dict:
     raw_k = cal.annual_k(raw)
     cd_k = cal.annual_k(ov)
 
-    sens_ov = cal.in_window(months, start, config.OVERLAP_END_SENSITIVITY)
+    sens_ov = cal.in_window(months[clean_month], start, config.OVERLAP_END_SENSITIVITY)
     sens, _ = cal.loyo(sens_ov, method)
 
     fit, pred = cal.FITS[method]
-    train = cal.in_window(months, start, "2019-12")
-    test = cal.in_window(months, "2020-01", end)
+    train = cal.in_window(months[clean_month], start, "2019-12")
+    test = cal.in_window(months[clean_month], "2020-01", end)
     fwd_pred = pred(fit(train), test)
     forward = cal.metrics(test["M"].to_numpy(), fwd_pred)
     forward_annual = (test.assign(pred=fwd_pred, year=test["ym"].str[:4])
@@ -55,7 +56,8 @@ def validate_country(country: str, calib: dict) -> dict:
 
     n20 = None
     if months.get("N") is not None and months["N"].sum() > 0:
-        n_ov = cal.in_window(months, config.N20_START, end).assign(V=lambda x: x["N"])
+        n_clean = (months["n20_outage_days"] == 0) & (months["modis_outage_days"] == 0)
+        n_ov = cal.in_window(months[n_clean], config.N20_START, end).assign(V=lambda x: x["N"])
         n_loyo, _ = cal.loyo(n_ov, "ratio")
         n20 = {"overlap": [config.N20_START, end], "loyo": _clean(n_loyo),
                "coefficients": calib.get("n20_model"),
@@ -106,6 +108,7 @@ def validate_country(country: str, calib: dict) -> dict:
         "terra_factor": calib["terra_factor"],
         "coefficients": calib["model"],
         "noaa20": n20,
+        "n_months_excluded_outage": int((~clean_month & (months["ym"] >= start) & (months["ym"] <= end)).sum()),
         "outage_months": months.loc[months["gap_filled"], "ym"].tolist(),
         "outage_fill_source": dict(zip(months.loc[months["gap_filled"], "ym"], months.loc[months["gap_filled"], "source"])),
         "invariant_max_rel_err": max_rel_err,

@@ -62,10 +62,12 @@ def outage_days(daily_path: str) -> pd.DataFrame:
     return out
 
 
-def select_model(monthlies: dict[float, pd.DataFrame], start: str, end: str) -> dict:
+def select_model(monthlies: dict[float, pd.DataFrame], start: str, end: str,
+                 exclude: set[str] = frozenset()) -> dict:
     results = {}
     for g, m in monthlies.items():
         ov = cal.in_window(m, start, end)
+        ov = ov[~ov["ym"].isin(exclude)]
         for method in cal.FITS:
             res, _ = cal.loyo(ov, method)
             ak = cal.annual_k(ov)
@@ -86,20 +88,26 @@ def build_country(country: str, skip_clean: bool = False) -> dict:
     clean_path = str(config.PROCESSED / "clean" / f"{country}.parquet")
     daily_path = str(config.PROCESSED / "clean" / f"{country}_daily_raw.parquet")
 
+    # Months with any sensor outage day are excluded from calibration fitting and validation:
+    # a partial-month VIIRS (or MODIS) record would bias the ratio.
+    out = outage_days(daily_path)
+    excl_v = set(out.loc[out.sensor.isin(["VIIRS", "MODIS"]), "ym"])
+    excl_n = set(out.loc[out.sensor.isin(["VIIRS_N20", "MODIS"]), "ym"])
     monthlies = {g: monthly_table(con, clean_path, g) for g in config.GRID_CANDIDATES}
-    choice = select_model(monthlies, config.OVERLAP_START, config.OVERLAP_END)
+    choice = select_model(monthlies, config.OVERLAP_START, config.OVERLAP_END, excl_v)
     g, method = choice["grid_deg"], choice["method"]
     months = monthlies[g].copy()
     overlap = cal.in_window(months, config.OVERLAP_START, config.OVERLAP_END)
+    overlap = overlap[~overlap["ym"].isin(excl_v)]
     model = cal.FITS[method][0](overlap)
     tf = cal.terra_factor(months)
     # NOAA-20: same ratio model, fit on its own overlap with MODIS (N20_START .. OVERLAP_END)
     has_n20 = months["N"].sum() > 0
     n_ov = cal.in_window(months, config.N20_START, config.OVERLAP_END).assign(V=lambda x: x["N"])
+    n_ov = n_ov[~n_ov["ym"].isin(excl_n)]
     n20_model = cal.fit_ratio(n_ov) if has_n20 else None
 
     # ---- flags + harmonized monthly series
-    out = outage_days(daily_path)
     last_date = pd.to_datetime(con.execute(f"SELECT max(acq_date) FROM '{clean_path}'").fetchall()[0][0])
     moy = months["ym"].str[5:7].astype(int)
     months["terra_only"] = months["ym"] < "2002-07"
@@ -169,6 +177,7 @@ def build_country(country: str, skip_clean: bool = False) -> dict:
                       for k, v in choice["candidates"].items()},
         "annual_k": {str(gg): cal.annual_k(m).round(4).to_dict(orient="records")
                      for gg, m in monthlies.items()},
+        "excluded_from_fit": sorted(excl_v),
         "outage_days": out.assign(date=out["date"].dt.strftime("%Y-%m-%d"))[["date", "sensor"]].to_dict(orient="records"),
         "last_date": last_date.strftime("%Y-%m-%d"),
     }
