@@ -140,3 +140,8 @@ button.link { border: none; background: none; color: var(--accent); padding: 0; 
   .kpis { grid-template-columns: repeat(2, 1fr); }
 }
 @media (prefers-reduced-motion: reduce) { .spinner::before, .skeleton { animation: none; } }
+
+.table-view { margin-top: 10px; font-size: 12px; }
+.table-view summary { cursor: pointer; color: var(--accent); }
+.table-scroll { overflow-x: auto; max-height: 420px; }
+.table-scroll .tbl td, .table-scroll .tbl th { white-space: nowrap; font-size: 11.5px; }

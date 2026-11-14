@@ -78,7 +78,11 @@ export default function Calendar({ data, color, numbers, onSelect }: Props) {
     return {
       animation: false,
       aria: { enabled: true, label: { description: `Burning activity calendar, years ${years[0]} to ${years[years.length - 1]} as rows and months as columns.` } },
-      grid: { top: 28, left: 46, right: 12, bottom: 8 },
+      grid: { top: 28, left: 46, right: 40, bottom: 8 },
+      toolbox: {
+        right: 0, top: 0,
+        feature: { saveAsImage: { title: "Save PNG", name: "firecal_calendar", pixelRatio: 2, backgroundColor: "#fff" } },
+      },
       tooltip: {
         confine: true,
         formatter: (p: { data: { cell: CalendarCell } }) => {
@@ -126,6 +130,28 @@ export default function Calendar({ data, color, numbers, onSelect }: Props) {
         onEvents={{ click: (p: { data: { cell: CalendarCell } }) => onSelect?.(p.data.cell) }}
       />
       <Legend color={color} vmax={vmax} units={data.units} />
+      <details className="table-view">
+        <summary>Show calendar as a table (screen-reader friendly)</summary>
+        <div className="table-scroll">
+          <table className="tbl">
+            <caption className="muted small">{data.units}; anomaly vs. baseline median in brackets; ⚑ = flagged</caption>
+            <thead><tr><th scope="col">Year</th>{MONTHS.map((m) => <th scope="col" key={m}>{m}</th>)}</tr></thead>
+            <tbody>
+              {years.map((y) => (
+                <tr key={y}>
+                  <th scope="row">{y}</th>
+                  {data.cells.filter((c) => c.year === y).map((c) => (
+                    <td key={c.month}>
+                      {c.value === null ? "—" : `${fmt(c.value)} (${pct(c.anomaly_pct)})`}
+                      {c.flags.some((f) => f !== "no_data") ? " ⚑" : ""}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </details>
     </div>
   );
 }
