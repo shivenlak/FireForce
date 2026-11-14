@@ -67,9 +67,20 @@ def _read_json(p: Path) -> dict:
     return json.loads(p.read_text()) if p.exists() else {}
 
 
-@lru_cache(maxsize=1)
+@lru_cache(maxsize=4)
+def _store(root: str, stamp: float) -> Store:
+    return Store(Path(root))
+
+
 def store() -> Store:
-    return Store(data_dir())
+    """Current data store; reloaded automatically when the pipeline rewrites calibration.json."""
+    root = data_dir()
+    cal = root / "calibration.json"
+    stamp = cal.stat().st_mtime if cal.exists() else 0.0
+    return _store(str(root), stamp)
+
+
+store.cache_clear = _store.cache_clear  # type: ignore[attr-defined]
 
 
 # ------------------------------------------------------------------ AOI handling

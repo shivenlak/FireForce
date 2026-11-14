@@ -21,6 +21,7 @@ await shot("01_calendar_counts", "/?aoi=bbox:-121.5,49,-118.5,52", ".calendar-pa
 await shot("02_calendar_anomaly", "/?aoi=bbox:-121.5,49,-118.5,52&color=anomaly", ".calendar-panel canvas");
 await shot("03_country_canada", "/?aoi=country:Canada", ".calendar-panel canvas");
 await shot("04_raw_viirs", "/?aoi=bbox:-121.5,49,-118.5,52&mode=viirs", ".calendar-panel canvas");
+await shot("08_country_brazil", "/?aoi=country:Brazil&color=anomaly", ".calendar-panel canvas");
 await shot("05_methods", "/#/methods", ".kpis");
 await shot("06_empty", "/?aoi=bbox:-30,-10,-29,-9", ".empty");
 await page.goto(base + "/?aoi=bbox:-125,48,-114,56&start=2026-01&end=2026-11");
