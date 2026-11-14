@@ -54,6 +54,7 @@ def outage_days(daily_path: str) -> pd.DataFrame:
         for day in pd.date_range(ld + pd.Timedelta(days=1), end, freq="D"):
             rows.append((day, s))
     out = pd.DataFrame(rows, columns=["date", "sensor"]).drop_duplicates()
+    out["date"] = pd.to_datetime(out["date"])
     out["ym"] = out["date"].dt.strftime("%Y-%m")
     return out
 
