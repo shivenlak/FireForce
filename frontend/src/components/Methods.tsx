@@ -200,13 +200,14 @@ function KChart({ v }: { v: CountryValidation }) {
     yAxis: { type: "value", name: "k = V/M" },
     series: [{
       type: "bar",
-      data: months.map(([, c]) => ({ value: c.k?.toFixed(2), itemStyle: { color: c.fallback ? SERIES.muted : SERIES.viirs } })),
+      // ratio model: k; log-linear model: implied V/M at a typical 100 MODIS cell-days
+      data: months.map(([, c]) => ({ value: (c.k ?? Math.expm1((c.a ?? 0) + (c.b ?? 1) * Math.log1p(100)) / 100).toFixed(2), itemStyle: { color: c.fallback ? SERIES.muted : SERIES.viirs } })),
     }],
   };
   return (
     <>
       <ReactECharts option={option} style={{ height: 200 }} />
-      <p className="muted small">VIIRS sees k× as many fire cell-days as MODIS. k is higher in winter and spring, when fires are small (VIIRS's advantage), and lower in the main fire season. Grey = pooled fallback.</p>
+      <p className="muted small">VIIRS sees k× as many fire cell-days as MODIS. k is higher in winter and spring, when fires are small (VIIRS's advantage), and lower in the main fire season. Grey = pooled fallback.{v.method === "loglin" && " Log-linear model: bars show the implied ratio at 100 MODIS cell-days."}</p>
     </>
   );
 }

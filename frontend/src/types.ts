@@ -158,7 +158,7 @@ export interface CountryValidation {
   forward_test_2020_2025: Metrics & { annual: { year: string; M: number; pred: number }[] };
   aqua_vs_snpp: Record<string, number>;
   terra_factor: { pooled: number; months: Record<string, number> };
-  coefficients: { method: string; months: Record<string, { k?: number; n_years: number; fallback: boolean }> };
+  coefficients: { method: string; months: Record<string, { k?: number; a?: number; b?: number; n_years: number; fallback: boolean }> };
   noaa20: { overlap: [string, string]; loyo: Metrics; coefficients: { months: Record<string, { k: number }> }; months_used: string[] } | null;
   outage_months: string[];
   outage_fill_source: Record<string, string>;
