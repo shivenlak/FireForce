@@ -12,7 +12,7 @@
 | M6 more countries | ✅ | Brazil, USA, Australia processed and validated. |
 | M7 live data | ✅ | `/api/recent` (NOAA-20/21 + MODIS NRT, 1 h cache) + map layer. |
 | M8 polish | ✅ | README, HANDOFF, METHODS with real numbers, aria labels, keyboard focus, table view, PNG export. |
-| Stretch: NOAA-20 gap filling | ✅ Canada · ⏳ others | Calibrated NOAA-20 replaces S-NPP in outage months (Canada LOYO R² 0.987). |
+| Stretch: NOAA-20 gap filling | ✅ | Calibrated NOAA-20 replaces S-NPP in outage months in all 4 countries (LOYO R² 0.94–0.99); 44 of 47 outage months filled from NOAA-20. |
 | Stretch: PNG export | ✅ | ECharts "Save PNG" on the calendar. |
 | Stretch: AOI-specific calibration, PDF report | ❌ | Not started (see HANDOFF next tasks). |
 
@@ -35,5 +35,8 @@
 - **Per-connection download throttling** → ran per-country downloads in parallel.
 - **Brazil: raw detections validate slightly better than cell-days**. Reported honestly; options in QUESTIONS.md #6.
 
-## Background jobs still running at handoff
-See the "Final state" section below (updated at the end of the run).
+## Final state
+- All 4 countries processed (MODIS + S-NPP + NOAA-20, 2000-11 → 2026-11-14), validated, and served from `data/processed/`. Tables: `python -m pipeline.report`.
+- No background jobs left running except the dev servers (`make dev`, ports 8010/5173) I used for testing. Stop them with Ctrl-C or `pkill -f "uvicorn backend.main:app --port 8010"; pkill -f vite`.
+- `make test`: 17 passed. Playwright smoke test: 8 screenshots in `docs/screenshots/`, no console errors.
+- Fresh clone → `make setup` → backend serves `data/sample/` correctly (verified).

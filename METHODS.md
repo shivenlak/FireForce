@@ -19,7 +19,7 @@ We snap every detection to a regular lat/lon grid and count **distinct (grid cel
 - **Model (per country × month-of-year m):** `k_m = median over overlap years of V/M`, using months with ≥20 MODIS cell-days; a month with fewer than 3 usable years falls back to the pooled ratio. Harmonized VIIRS: `M̂ = V / k_m`.
   A robust log-linear alternative, `log1p(V) = a_m + b_m·log1p(M)` (Theil–Sen), is also fitted. The model with the lower LOYO score (MAPE + |bias|) is used: **ratio for Canada, Brazil and the USA; log-linear for Australia**, where it captures the slight saturation in big fire years (score 7.7 vs 9.6). With the log-linear model, a detection's VIIRS weight uses the country-month scale `M̂/V`.
 - **Seasonality matters:** in Canada k ranges from 2.0 (May/Oct) to 5.6 (Mar). VIIRS's advantage is largest when fires are small.
-- **NOAA-20 (VIIRS on JPSS-1):** calibrated to MODIS the same way over Apr 2018 – Dec 2025 (Canada: LOYO R² 0.987, MAPE 17.5%).
+- **NOAA-20 (VIIRS on JPSS-1):** calibrated to MODIS with the ratio model over Apr 2018 – Dec 2025. LOYO R² / MAPE: Canada 0.987 / 17.5%, Brazil 0.983 / 9.7%, USA 0.949 / 10.7%, Australia 0.943 / 11.5%. It fills 44 of the 47 S-NPP outage months across the four countries.
 - **Harmonized series:** MODIS for Nov 2000 – Jan 2012. From Feb 2012 the source is a monthly cascade: **calibrated S-NPP → calibrated NOAA-20 (if S-NPP has an outage) → MODIS (if NOAA-20 is unavailable too).** Every source is in MODIS-equivalent units, so the series keeps running after MODIS ends.
 - **Per-detection weights**, so any area of interest (AOI) can be summed. Let `n` = number of detections of that sensor in the same cell-day.
   - MODIS: `f_m / n`, where f_m is the Terra-only factor (§4) and 1 otherwise.

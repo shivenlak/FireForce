@@ -1,7 +1,7 @@
 PY ?= .venv/bin/python
 PYTHON_BOOT ?= $(shell command -v python3.11 || command -v python3.12 || command -v python3.13 || command -v python3)
 COUNTRIES ?= Canada
-SENSORS ?= modis,viirs-snpp
+SENSORS ?= modis,viirs-snpp,viirs-jpss1
 API_PORT ?= 8010
 WEB_PORT ?= 5173
 

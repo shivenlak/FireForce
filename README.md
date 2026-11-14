@@ -29,7 +29,7 @@ Without any downloads, the app serves the **committed sample** (`data/sample/`, 
 
 ```bash
 cp .env.example .env              # add your FIRMS MAP_KEY (free: firms.modaps.eosdis.nasa.gov/api/map_key)
-make data COUNTRIES=Canada        # ~700 MB download, ~1 min processing
+make data COUNTRIES=Canada        # ~1 GB download (MODIS, S-NPP, NOAA-20), ~1 min processing
 make data COUNTRIES=Brazil,Australia,United_States
 make sample                       # regenerate data/sample from data/processed
 ```
