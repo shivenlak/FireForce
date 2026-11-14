@@ -23,6 +23,13 @@ await shot("03_country_canada", "/?aoi=country:Canada", ".calendar-panel canvas"
 await shot("04_raw_viirs", "/?aoi=bbox:-121.5,49,-118.5,52&mode=viirs", ".calendar-panel canvas");
 await shot("05_methods", "/#/methods", ".kpis");
 await shot("06_empty", "/?aoi=bbox:-30,-10,-29,-9", ".empty");
+await page.goto(base + "/?aoi=bbox:-125,48,-114,56&start=2026-01&end=2026-11");
+await page.waitForSelector(".calendar-panel canvas", { timeout: 60000 });
+await page.getByLabel("Live: last 7 days (NRT)").check();
+await page.waitForFunction(() => /live detections|failed|too large|not set/.test(document.body.innerText), null, { timeout: 120000 });
+await page.waitForTimeout(1500);
+await page.screenshot({ path: `${out}07_live_layer.png` });
+console.log("ok 07_live_layer");
 const text = await page.goto(base + "/?aoi=bbox:-121.5,49,-118.5,52").then(() => page.waitForSelector(".card")).then(() => page.textContent(".cards"));
 console.log("cards:", text.slice(0, 200));
 console.log(errors.length ? `ERRORS:\n${errors.join("\n")}` : "no console errors");

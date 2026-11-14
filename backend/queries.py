@@ -257,7 +257,8 @@ def calendar(s: Store, req) -> dict:
     start = req.start or dt.date(1900, 1, 1)
     end = req.end or dt.date(2999, 12, 31)
     lookup = grid.set_index(["year", "month"])
-    y_min, y_max = int(grid["year"].min()), int(grid["year"].max())
+    y_min = max(int(grid["year"].min()), start.year)
+    y_max = min(int(grid["year"].max()), end.year)
     cells = []
     for y in range(y_min, y_max + 1):
         for mth in range(1, 13):

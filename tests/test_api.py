@@ -35,7 +35,8 @@ def test_modes_and_date_range(client):
     v = client.post("/api/calendar", json={"aoi": RECT, "mode": "viirs"}).json()
     assert all(c["value"] is None for c in v["cells"] if c["year"] < 2012)
     r = client.post("/api/calendar", json={"aoi": RECT, "start": "2010-01-01", "end": "2010-12-31"}).json()
-    assert all((c["value"] is None) == (c["year"] != 2010) for c in r["cells"])
+    assert r["years"] == [2010] and all(c["value"] is not None for c in r["cells"])
+    assert r["baseline_median"] == client.post("/api/calendar", json={"aoi": RECT}).json()["baseline_median"]
 
 
 def test_summary(client):

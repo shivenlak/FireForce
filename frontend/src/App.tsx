@@ -112,7 +112,7 @@ function Explorer({ health, regions }: { health: Health; regions: Region[] }) {
     setLiveStatus("Fetching last 7 days from FIRMS…");
     api.recent(bbox, 7).then((r) => {
       setRecent(r);
-      setLiveStatus(r.error ?? `${r.points.length.toLocaleString()} live detections (NOAA-20/21 + MODIS NRT), fetched ${r.fetched_at.slice(11, 16)} UTC`);
+      setLiveStatus(r.error ?? `${r.points.length.toLocaleString()} live detections (NOAA-20/21 + MODIS NRT, unfiltered; shown as hollow blue circles), fetched ${r.fetched_at.slice(11, 16)} UTC`);
     }).catch((e) => setLiveStatus(`Live layer failed: ${e.message}`));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [live, bbox?.join(",")]);
