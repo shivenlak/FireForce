@@ -36,7 +36,7 @@ class CalendarCell(BaseModel):
     anomaly_pct: Optional[float]     # (value - median)/median*100; None if median < 1
     zscore: Optional[float]          # robust z = (value - median)/(1.4826*MAD)
     detections: int                  # raw detections behind the value
-    source: Optional[Literal["MODIS", "VIIRS"]]  # harmonized source sensor that month
+    source: Optional[Literal["MODIS", "VIIRS", "VIIRS_N20"]]  # harmonized source sensor that month
     flags: list[Flag] = []
 
 

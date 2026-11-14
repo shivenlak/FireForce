@@ -11,6 +11,7 @@ export const SERIES = {
   modis: "#0072B2",
   viirs: "#E69F00",
   harmonized: "#009E73",
+  n20: "#CC79A7",
   current: "#D55E00",
   muted: "#999999",
 };

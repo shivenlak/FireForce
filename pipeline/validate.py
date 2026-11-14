@@ -53,6 +53,14 @@ def validate_country(country: str, calib: dict) -> dict:
     forward_annual = (test.assign(pred=fwd_pred, year=test["ym"].str[:4])
                       .groupby("year")[["M", "pred"]].sum().round(0).reset_index().to_dict(orient="records"))
 
+    n20 = None
+    if months.get("N") is not None and months["N"].sum() > 0:
+        n_ov = cal.in_window(months, config.N20_START, end).assign(V=lambda x: x["N"])
+        n_loyo, _ = cal.loyo(n_ov, "ratio")
+        n20 = {"overlap": [config.N20_START, end], "loyo": _clean(n_loyo),
+               "coefficients": calib.get("n20_model"),
+               "months_used": months.loc[months["source"] == "VIIRS_N20", "ym"].tolist()}
+
     aq = ov[ov["M_aqua"] >= config.MIN_MODIS_FOR_RATIO]
     aqua = {
         "pearson_r_monthly": _r(np.corrcoef(aq["M_aqua"], aq["V"])[0, 1]),
@@ -71,7 +79,10 @@ def validate_country(country: str, calib: dict) -> dict:
     chk = months.set_index("ym")["H"].to_frame().join(w).fillna(0)
     max_rel_err = float((abs(chk["H"] - chk["hw"]) / chk["H"].clip(lower=1)).max())
 
-    series = months[["ym", "det_M", "det_V", "M", "V", "M_adj", "V_cal", "H", "source",
+    for col in ("N", "N_cal"):
+        if col not in months:
+            months[col] = 0.0
+    series = months[["ym", "det_M", "det_V", "M", "V", "N", "N_cal", "M_adj", "V_cal", "H", "source",
                      "terra_only", "gap_filled", "partial"]].copy()
     series = series.round(2)
 
@@ -94,7 +105,9 @@ def validate_country(country: str, calib: dict) -> dict:
         "aqua_vs_snpp": aqua,
         "terra_factor": calib["terra_factor"],
         "coefficients": calib["model"],
+        "noaa20": n20,
         "outage_months": months.loc[months["gap_filled"], "ym"].tolist(),
+        "outage_fill_source": dict(zip(months.loc[months["gap_filled"], "ym"], months.loc[months["gap_filled"], "source"])),
         "invariant_max_rel_err": max_rel_err,
         "series": series.to_dict(orient="records"),
     }

@@ -204,11 +204,9 @@ def month_meta(s: Store, countries: list[str]) -> pd.DataFrame:
     m = s.months[s.months["country"].isin(countries)].copy()
     if m.empty:
         return pd.DataFrame(columns=["ym", "terra_only", "gap_filled", "partial", "source"])
-    m["viirs_src"] = m["source"] == "VIIRS"
     g = m.groupby("ym").agg(terra_only=("terra_only", "any"), gap_filled=("gap_filled", "any"),
-                            partial=("partial", "any"), viirs_src=("viirs_src", "all"))
-    g["source"] = np.where(g["viirs_src"], "VIIRS", "MODIS")
-    return g.drop(columns="viirs_src").reset_index()
+                            partial=("partial", "any"), source=("source", lambda x: x.mode().iat[0]))
+    return g.reset_index()
 
 
 def _full_grid(s: Store, sel: Selection, mode: str) -> pd.DataFrame:

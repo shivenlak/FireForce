@@ -100,6 +100,7 @@ button.link { border: none; background: none; color: var(--accent); padding: 0; 
 .rank { margin: 0 0 12px; padding-left: 20px; }
 .rank li { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px dotted var(--line); }
 .sharebar { display: flex; height: 14px; border-radius: 4px; overflow: hidden; background: #eee; margin: 6px 0; }
+.sharekey { margin-right: 10px; white-space: nowrap; }
 .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; vertical-align: 0; }
 .chart p { margin: 4px 0 0; }
 .flagnote { font-size: 12px; background: #fbf0f4; border-left: 3px solid var(--fire); padding: 4px 8px; border-radius: 4px; }

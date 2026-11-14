@@ -28,7 +28,9 @@ def monthly_celldays_sql(src: str, g: float) -> str:
              count(DISTINCT CASE WHEN sensor='MODIS' AND satellite='Terra' THEN (cell, acq_date) END) AS M_terra,
              count(DISTINCT CASE WHEN sensor='MODIS' AND satellite='Aqua' THEN (cell, acq_date) END) AS M_aqua,
              count(DISTINCT CASE WHEN sensor='VIIRS' THEN (cell, acq_date) END) AS V,
+             count(DISTINCT CASE WHEN sensor='VIIRS_N20' THEN (cell, acq_date) END) AS N,
              count(*) FILTER (WHERE sensor='MODIS') AS det_M,
-             count(*) FILTER (WHERE sensor='VIIRS') AS det_V
+             count(*) FILTER (WHERE sensor='VIIRS') AS det_V,
+             count(*) FILTER (WHERE sensor='VIIRS_N20') AS det_N
       FROM d GROUP BY 1 ORDER BY 1
     """

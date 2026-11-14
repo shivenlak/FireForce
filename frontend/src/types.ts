@@ -29,7 +29,7 @@ export interface CalendarCell {
   anomaly_pct: number | null;
   zscore: number | null;
   detections: number;
-  source: "MODIS" | "VIIRS" | null;
+  source: "MODIS" | "VIIRS" | "VIIRS_N20" | null;
   flags: Flag[];
 }
 
@@ -159,7 +159,9 @@ export interface CountryValidation {
   aqua_vs_snpp: Record<string, number>;
   terra_factor: { pooled: number; months: Record<string, number> };
   coefficients: { method: string; months: Record<string, { k?: number; n_years: number; fallback: boolean }> };
+  noaa20: { overlap: [string, string]; loyo: Metrics; coefficients: { months: Record<string, { k: number }> }; months_used: string[] } | null;
   outage_months: string[];
+  outage_fill_source: Record<string, string>;
   invariant_max_rel_err: number;
   series: SeriesRow[];
 }

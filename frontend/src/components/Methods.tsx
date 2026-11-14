@@ -119,7 +119,12 @@ export default function Methods() {
           <ul className="checks">
             <li><b>Aqua vs S-NPP</b> (both ~13:30 overpass): monthly correlation r = {v.aqua_vs_snpp.pearson_r_monthly}; VIIRS/Aqua cell-day ratio {v.aqua_vs_snpp.median_ratio_viirs_over_aqua}.</li>
             <li><b>Terra-only era</b> (Nov 2000 – Jun 2002): ×{v.terra_factor.pooled.toFixed(2)} pooled correction (per month {Math.min(...Object.values(v.terra_factor.months)).toFixed(2)}–{Math.max(...Object.values(v.terra_factor.months)).toFixed(2)}), estimated from 2003–2011.</li>
-            <li><b>VIIRS outage months filled with MODIS</b>: {v.outage_months.length ? v.outage_months.join(", ") : "none"}.</li>
+            <li><b>S-NPP outage months</b> (filled with calibrated NOAA-20 where available, otherwise MODIS):{" "}
+              {v.outage_months.length ? v.outage_months.map((m) => `${m} (${(v.outage_fill_source?.[m] ?? "MODIS").replace("VIIRS_N20", "NOAA-20")})`).join(", ") : "none"}.</li>
+            {v.noaa20 && (
+              <li><b>NOAA-20 → MODIS calibration</b> ({v.noaa20.overlap.join(" → ")}): LOYO R² {r2f(v.noaa20.loyo.r2)}, MAPE {pctf(v.noaa20.loyo.mape)}, bias {pctf(v.noaa20.loyo.bias_pct)}.
+                This lets the record continue on NOAA-20 when S-NPP is down, and after MODIS ends.</li>
+            )}
           </ul>
           <h3>Per-year LOYO error</h3>
           <PerYear v={v} />

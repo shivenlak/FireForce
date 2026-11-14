@@ -12,8 +12,12 @@ interface Props {
 
 const FLAG_TEXT: Record<string, string> = {
   terra_only: "Terra-only MODIS (pre-Aqua), corrected with Terra→Terra+Aqua factor",
-  gap_filled: "VIIRS outage this month; value from MODIS",
+  gap_filled: "S-NPP outage this month; value from a backup sensor (see Source)",
   partial: "Partial month (data so far)",
+};
+
+const SOURCE_LABEL: Record<string, string> = {
+  MODIS: "MODIS", VIIRS: "VIIRS S-NPP (calibrated)", VIIRS_N20: "VIIRS NOAA-20 (calibrated)",
 };
 
 // Anomaly is colored by log2(value / median), clamped to ±3 (1/8× … 8×): symmetric for
@@ -94,7 +98,7 @@ export default function Calendar({ data, color, numbers, onSelect }: Props) {
             ${fmt(c.value, 1)} ${data.units}<br/>
             Baseline median: ${fmt(med, 1)}<br/>
             Anomaly: <b>${pct(c.anomaly_pct)}</b>${c.zscore !== null ? ` (robust z ${c.zscore.toFixed(1)})` : ""}<br/>
-            Source: ${c.source ?? "—"} · ${c.detections.toLocaleString()} detections${flags}`;
+            Source: ${SOURCE_LABEL[c.source ?? ""] ?? "—"} · ${c.detections.toLocaleString()} detections${flags}`;
         },
       },
       xAxis: {
@@ -171,7 +175,7 @@ function Legend({ color, vmax, units }: { color: "counts" | "anomaly"; vmax: num
       <div className="legend-keys">
         <span><i className="swatch" style={{ background: ZERO }} /> zero</span>
         <span><i className="swatch hatch-terra" /> Terra-only (2000–02)</span>
-        <span><i className="swatch hatch-gap" /> VIIRS outage → MODIS</span>
+        <span><i className="swatch hatch-gap" /> S-NPP outage → NOAA-20/MODIS</span>
         <span><i className="swatch partial" /> partial month</span>
         <span className="muted">{color === "counts" ? `${units}, log scale` : "vs. baseline median for that month"}</span>
       </div>

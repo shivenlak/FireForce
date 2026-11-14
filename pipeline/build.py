@@ -37,20 +37,23 @@ def outage_days(daily_path: str) -> pd.DataFrame:
     d.index = pd.to_datetime(d.index)
     full = pd.date_range(d.index.min(), d.index.max(), freq="D")
     d = d.reindex(full, fill_value=0)
-    for s in ("MODIS", "VIIRS"):
+    for s in ("MODIS", "VIIRS", "VIIRS_N20"):
         if s not in d:
             d[s] = 0
-    viirs_start = pd.Timestamp("2012-01-20")
+    starts = {"VIIRS": pd.Timestamp("2012-01-20"), "VIIRS_N20": pd.Timestamp(config.N20_START + "-01")}
     rows = []
     for day, r in d.iterrows():
-        if r["VIIRS"] == 0 and r["MODIS"] >= OUTAGE_OTHER_MIN and day >= viirs_start:
-            rows.append((day, "VIIRS"))
-        if r["MODIS"] == 0 and r["VIIRS"] >= OUTAGE_MODIS_OTHER_MIN:
+        for s, st in starts.items():
+            if r[s] == 0 and r["MODIS"] >= OUTAGE_OTHER_MIN and day >= st:
+                rows.append((day, s))
+        if r["MODIS"] == 0 and max(r["VIIRS"], r["VIIRS_N20"]) >= OUTAGE_MODIS_OTHER_MIN:
             rows.append((day, "MODIS"))
     # trailing days after a sensor's last data (e.g. NRT feed ended) also count as outage
-    last = {s: d.index[d[s] > 0].max() for s in ("MODIS", "VIIRS")}
     end = d.index.max()
-    for s, ld in last.items():
+    for s in ("MODIS", "VIIRS", "VIIRS_N20"):
+        if not (d[s] > 0).any():
+            continue
+        ld = d.index[d[s] > 0].max()
         for day in pd.date_range(ld + pd.Timedelta(days=1), end, freq="D"):
             rows.append((day, s))
     out = pd.DataFrame(rows, columns=["date", "sensor"]).drop_duplicates()
@@ -90,6 +93,10 @@ def build_country(country: str, skip_clean: bool = False) -> dict:
     overlap = cal.in_window(months, config.OVERLAP_START, config.OVERLAP_END)
     model = cal.FITS[method][0](overlap)
     tf = cal.terra_factor(months)
+    # NOAA-20: same ratio model, fit on its own overlap with MODIS (N20_START .. OVERLAP_END)
+    has_n20 = months["N"].sum() > 0
+    n_ov = cal.in_window(months, config.N20_START, config.OVERLAP_END).assign(V=lambda x: x["N"])
+    n20_model = cal.fit_ratio(n_ov) if has_n20 else None
 
     # ---- flags + harmonized monthly series
     out = outage_days(daily_path)
@@ -99,15 +106,22 @@ def build_country(country: str, skip_clean: bool = False) -> dict:
     months["terra_factor"] = np.where(months["terra_only"], moy.map(tf["months"]), 1.0)
     months["M_adj"] = months["M"] * months["terra_factor"]
     months["V_cal"] = cal.predict(model, months)
+    months["N_cal"] = cal.predict_ratio(n20_model, months.assign(V=months["N"])) if has_n20 else 0.0
     months["viirs_outage_days"] = months["ym"].map(out[out.sensor == "VIIRS"].groupby("ym").size()).fillna(0).astype(int)
+    months["n20_outage_days"] = months["ym"].map(out[out.sensor == "VIIRS_N20"].groupby("ym").size()).fillna(0).astype(int)
     months["modis_outage_days"] = months["ym"].map(out[out.sensor == "MODIS"].groupby("ym").size()).fillna(0).astype(int)
     months["partial"] = months["ym"] == last_date.strftime("%Y-%m")
     viirs_era = months["ym"] >= f"{config.SWITCH_YEAR}-02"  # S-NPP data start 2012-01-20
     viirs_bad = months["viirs_outage_days"] >= OUTAGE_MIN_DAYS
     modis_ok = months["modis_outage_days"] < OUTAGE_MIN_DAYS
-    months["source"] = np.where(viirs_era & ~(viirs_bad & modis_ok & (months["M"] > 0)), "VIIRS", "MODIS")
-    months["gap_filled"] = viirs_era & (months["source"] == "MODIS")
-    months["H"] = np.where(months["source"] == "VIIRS", months["V_cal"], months["M_adj"])
+    n20_ok = (months["ym"] >= config.N20_START) & (months["n20_outage_days"] < OUTAGE_MIN_DAYS) & (months["N"] > 0)
+    # Source cascade in the VIIRS era: S-NPP -> NOAA-20 (calibrated) -> MODIS -> S-NPP anyway.
+    months["source"] = np.select(
+        [~viirs_era, ~viirs_bad, n20_ok, modis_ok & (months["M"] > 0)],
+        ["MODIS", "VIIRS", "VIIRS_N20", "MODIS"], default="VIIRS")
+    months["gap_filled"] = viirs_era & (months["source"] != "VIIRS")
+    months["H"] = np.select([months["source"] == "VIIRS", months["source"] == "VIIRS_N20"],
+                            [months["V_cal"], months["N_cal"]], default=months["M_adj"])
     months["country"] = country
     (config.PROCESSED / "months").mkdir(parents=True, exist_ok=True)
     months.to_parquet(config.PROCESSED / "months" / f"{country}.parquet", index=False)
@@ -116,6 +130,7 @@ def build_country(country: str, skip_clean: bool = False) -> dict:
     # MODIS: terra_factor / n_det   VIIRS: (V_cal / V) / n_det  (= (1/k)/n_det for ratio model)
     wt = months[["ym", "terra_factor", "source"]].copy()
     wt["viirs_scale"] = np.where(months["V"] > 0, months["V_cal"] / months["V"].replace(0, 1), 0.0)
+    wt["n20_scale"] = np.where(months["N"] > 0, months["N_cal"] / months["N"].replace(0, 1), 0.0)
     con.register("wt", wt)
     det_dir = config.PROCESSED / "detections"
     country_dir = det_dir / f"country={country}"
@@ -133,10 +148,10 @@ def build_country(country: str, skip_clean: bool = False) -> dict:
                n.latitude, n.longitude, n.acq_date, n.acq_time, n.satellite, n.confidence,
                n.daynight, n.frp, n.source AS data_source, n.cell_id, n.n_det_cellday,
                1.0 / n.n_det_cellday AS cellday_weight,
-               CASE WHEN n.sensor = 'MODIS' THEN wt.terra_factor ELSE wt.viirs_scale END
+               CASE n.sensor WHEN 'MODIS' THEN wt.terra_factor WHEN 'VIIRS' THEN wt.viirs_scale ELSE wt.n20_scale END
                  / n.n_det_cellday AS calibrated_weight,
                CASE WHEN n.sensor = wt.source THEN
-                 CASE WHEN n.sensor = 'MODIS' THEN wt.terra_factor ELSE wt.viirs_scale END / n.n_det_cellday
+                 CASE n.sensor WHEN 'MODIS' THEN wt.terra_factor WHEN 'VIIRS' THEN wt.viirs_scale ELSE wt.n20_scale END / n.n_det_cellday
                ELSE 0 END AS harmonized_weight
         FROM n JOIN wt USING (ym)
       ) TO '{det_dir}' (FORMAT parquet, PARTITION_BY (country, sensor, year), OVERWRITE_OR_IGNORE, COMPRESSION zstd)
@@ -149,7 +164,7 @@ def build_country(country: str, skip_clean: bool = False) -> dict:
         "built": dt.datetime.now().isoformat(timespec="seconds"),
         "grid_deg": g, "method": method,
         "overlap": [config.OVERLAP_START, config.OVERLAP_END],
-        "model": model, "terra_factor": tf,
+        "model": model, "terra_factor": tf, "n20_model": n20_model,
         "selection": {k: {kk: vv for kk, vv in v.items() if kk != "per_year"}
                       for k, v in choice["candidates"].items()},
         "annual_k": {str(gg): cal.annual_k(m).round(4).to_dict(orient="records")

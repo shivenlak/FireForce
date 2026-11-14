@@ -2,6 +2,10 @@ import ReactECharts from "echarts-for-react";
 import { MONTHS, SERIES, fmt, ordinal, pct } from "../colors";
 import type { SummaryResponse } from "../types";
 
+const SENSORS: [string, string, string][] = [
+  ["MODIS", "MODIS", SERIES.modis], ["VIIRS", "S-NPP", SERIES.viirs], ["VIIRS_N20", "NOAA-20", SERIES.n20],
+];
+
 export function Cards({ s, currentFlags = [] }: { s: SummaryResponse; currentFlags?: string[] }) {
   const c = s.current;
   const share = s.sensor_share.harmonized;
@@ -25,7 +29,7 @@ export function Cards({ s, currentFlags = [] }: { s: SummaryResponse; currentFla
               Compared with the same days ({MONTHS[c.month - 1]} 1–{c.day}) in every year. Median {fmt(c.median, 0)}.
             </p>
             {currentFlags.includes("gap_filled") && (
-              <p className="flagnote">⚑ VIIRS S-NPP data are missing for part of this month, so this value comes from MODIS (MODIS-equivalent units, still comparable).</p>
+              <p className="flagnote">⚑ VIIRS S-NPP data are missing for part of this month, so this value comes from a backup sensor (calibrated NOAA-20 or MODIS; same MODIS-equivalent units).</p>
             )}
             <MiniHistory s={s} />
           </>
@@ -47,17 +51,18 @@ export function Cards({ s, currentFlags = [] }: { s: SummaryResponse; currentFla
       </section>
       <section className="card" aria-labelledby="c-src">
         <h3 id="c-src">Where the numbers come from</h3>
-        <div className="sharebar" role="img" aria-label={`MODIS ${((share.MODIS ?? 0) * 100).toFixed(0)} percent, VIIRS ${((share.VIIRS ?? 0) * 100).toFixed(0)} percent of the harmonized total`}>
-          <span style={{ width: `${(share.MODIS ?? 0) * 100}%`, background: SERIES.modis }} />
-          <span style={{ width: `${(share.VIIRS ?? 0) * 100}%`, background: SERIES.viirs }} />
+        <div className="sharebar" role="img" aria-label={SENSORS.map(([k, l]) => `${l} ${((share[k] ?? 0) * 100).toFixed(0)} percent`).join(", ") + " of the harmonized total"}>
+          {SENSORS.map(([k, , c]) => <span key={k} style={{ width: `${(share[k] ?? 0) * 100}%`, background: c }} />)}
         </div>
         <p>
-          <i className="dot" style={{ background: SERIES.modis }} /> MODIS {((share.MODIS ?? 0) * 100).toFixed(0)}% ·{" "}
-          <i className="dot" style={{ background: SERIES.viirs }} /> VIIRS {((share.VIIRS ?? 0) * 100).toFixed(0)}% of the harmonized total
+          {SENSORS.filter(([k]) => (share[k] ?? 0) > 0).map(([k, l, c]) => (
+            <span key={k} className="sharekey"><i className="dot" style={{ background: c }} /> {l} {((share[k] ?? 0) * 100).toFixed(0)}%</span>
+          ))}
+          <span className="muted"> of the harmonized total</span>
         </p>
         <p className="muted">
-          Raw detections: MODIS {(s.sensor_share.detections.MODIS ?? 0).toLocaleString()} · VIIRS{" "}
-          {(s.sensor_share.detections.VIIRS ?? 0).toLocaleString()}. Total {fmt(s.total)} {s.units}.
+          Raw detections: {SENSORS.filter(([k]) => s.sensor_share.detections[k]).map(([k, l]) => `${l} ${s.sensor_share.detections[k].toLocaleString()}`).join(" · ")}.
+          Total {fmt(s.total)} {s.units}.
         </p>
       </section>
     </div>

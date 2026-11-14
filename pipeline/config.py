@@ -46,6 +46,7 @@ OVERLAP_END_SENSITIVITY = "2022-12"  # pre-drift alternative reported in validat
 MIN_MODIS_FOR_RATIO = 20         # skip month-years with fewer MODIS cell-days when fitting ratio
 TERRA_ONLY_END = "2002-07"       # Aqua MODIS fire data begins July 2002 in FIRMS
 TERRA_FACTOR_YEARS = (2003, 2011)
+N20_START = "2018-04"            # NOAA-20 VIIRS standard data start (FIRMS availability)
 SWITCH_YEAR = 2012               # MODIS before, calibrated VIIRS from this year on
 
 

@@ -20,6 +20,7 @@ import duckdb
 
 from pipeline import config
 
+FAMILIES = (("modis", "MODIS"), ("viirs-snpp", "VIIRS"), ("viirs-jpss1", "VIIRS_N20"))
 BOUNDARIES = config.RAW / "boundaries" / "ne_50m_admin_0_countries.geojson"
 
 
@@ -47,7 +48,7 @@ def _conf_filter() -> str:
     keep = ",".join(f"'{c}'" for c in config.VIIRS_KEEP_CONFIDENCE)
     return f"""(
       (sensor = 'MODIS' AND TRY_CAST(confidence AS INTEGER) >= {config.MODIS_MIN_CONFIDENCE})
-      OR (sensor = 'VIIRS' AND left(confidence, 1) IN ({keep}))
+      OR (sensor LIKE 'VIIRS%' AND left(confidence, 1) IN ({keep}))
     )"""
 
 
@@ -56,7 +57,7 @@ def clean_country(country: str, con: duckdb.DuckDBPyConnection | None = None) ->
     out_dir = config.PROCESSED / "clean"
     out_dir.mkdir(parents=True, exist_ok=True)
     parts = []
-    for slug, family in (("modis", "MODIS"), ("viirs-snpp", "VIIRS")):
+    for slug, family in FAMILIES:
         files = sorted((config.RAW_YEARLY / slug).glob(f"{slug}_*_{country}.csv"))
         if files:
             parts.append(_sensor_select(str(config.RAW_YEARLY / slug / f"{slug}_*_{country}.csv"),
@@ -74,7 +75,7 @@ def clean_country(country: str, con: duckdb.DuckDBPyConnection | None = None) ->
 
     # API rows (current year; SP + NRT mixed, 'source' column already present)
     api_parts = []
-    for slug, family in (("modis", "MODIS"), ("viirs-snpp", "VIIRS")):
+    for slug, family in FAMILIES:
         for f in sorted((config.RAW_API / "merged").glob(f"{slug}_*_{country}.csv")):
             if f.stat().st_size < 200:
                 continue
